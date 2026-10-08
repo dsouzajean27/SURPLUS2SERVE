@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>FoodRescue AI - Donor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>🍽️ FoodRescue AI - Donor</h1>
+    <div class="user-info">
+      <span id="userName"></span>
+      <button id="logoutBtn" class="secondary">Logout</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="grid-2">
+      <div class="card">
+        <h2>Post Surplus Food</h2>
+        <form id="donationForm">
+          <label>Food Type</label>
+          <input type="text" id="foodType" placeholder="e.g. Cooked rice, Bread, Vegetables" required />
+          <label>Quantity (kg)</label>
+          <input type="number" id="quantity" min="1" required />
+          <label>Servings (approx. people it can feed)</label>
+          <input type="number" id="servings" min="1" required />
+          <label>Prepared At (optional)</label>
+          <input type="datetime-local" id="prepTime" />
+          <label>Expiry / Best-Before</label>
+          <input type="datetime-local" id="expiryTime" required />
+          <label>Pickup Address</label>
+          <input type="text" id="address" required />
+          <div class="grid-2">
+            <div>
+              <label>Latitude</label>
+              <input type="number" step="any" id="lat" required />
+            </div>
+            <div>
+              <label>Longitude</label>
+              <input type="number" step="any" id="lng" required />
+            </div>
+          </div>
+          <label>Image URL (optional)</label>
+          <input type="text" id="imageUrl" placeholder="https://..." />
+          <button type="submit" style="margin-top:16px; width:100%;">Post Donation</button>
+          <div id="donationMsg"></div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Pickup Location Preview</h2>
+        <div id="map"></div>
+        <p style="font-size:12px; color:#6b7280; margin-top:8px;">
+          Map updates as you enter latitude/longitude above.
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>My Donations</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Food</th><th>Qty (kg)</th><th>Servings</th><th>Status</th><th>Expiry</th><th>Top Recommended NGO</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="donationsTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/donor.js"></script>
+</body>
+</html>

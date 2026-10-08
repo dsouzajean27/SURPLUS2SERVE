@@ -1,0 +1,17 @@
+[
+  {
+    "id": "4a5c2361-296a-4a24-bd3c-433c6d5b24d6",
+    "name": "SWAGAT HOTEL",
+    "email": "swa@gmail.com",
+    "passwordHash": "$2a$10$JJp6EBWh6SPIb4ThYsjpCOGpCeFGKF9xK82WTd3d8ruFH8Lu2DHLK",
+    "role": "donor",
+    "phone": "9987957214",
+    "location": {
+      "address": "Thane West",
+      "lat": 0,
+      "lng": 0
+    },
+    "verified": false,
+    "createdAt": "2026-09-08T06:05:17.937Z"
+  }
+]
