@@ -11,3 +11,15 @@ def haversine_distance(lat1: float, lng1: float, lat2: float, lng2: float) -> fl
     a = math.sin(d_phi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(d_lambda / 2) ** 2
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return round(R * c, 1)
+
+def sort_by_distance(origin_lat, origin_lng, points):
+    """
+    Given an origin and a list of (lat, lng, id),
+    return the points sorted by nearest distance.
+    """
+    distances = []
+    for lat, lng, pid in points:
+        d = haversine_distance(origin_lat, origin_lng, lat, lng)
+        distances.append((pid, d))
+    return sorted(distances, key=lambda x: x[1])
+
