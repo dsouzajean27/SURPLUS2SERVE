@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from app.utils.timeutil import utcnow
 
 from sqlalchemy import Column, String, Float, DateTime, Enum, ForeignKey
 from sqlalchemy.orm import relationship
@@ -33,6 +33,6 @@ class Requirement(Base):
         default="flexible",
     )
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     ngo = relationship("User", back_populates="requirements", foreign_keys=[ngo_id])

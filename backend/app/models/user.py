@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from app.utils.timeutil import utcnow
 
 from sqlalchemy import Column, String, Boolean, DateTime, Float, Enum
 from sqlalchemy.orm import relationship
@@ -28,7 +28,7 @@ class User(Base):
     longitude = Column(Float, nullable=True)
 
     verified = Column(Boolean, default=False)  # admins auto-verified, donor/ngo need admin approval
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     donations = relationship("Donation", back_populates="donor", foreign_keys="Donation.donor_id")
     requirements = relationship("Requirement", back_populates="ngo", foreign_keys="Requirement.ngo_id")

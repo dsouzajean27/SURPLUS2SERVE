@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from app.utils.timeutil import utcnow
 
 from sqlalchemy import Column, String, Float, DateTime, Enum, ForeignKey, Text
 from sqlalchemy.orm import relationship
@@ -50,7 +50,7 @@ class Donation(Base):
 
     accepted_ngo_id = Column(String(36), ForeignKey("users.id"), nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     donor = relationship("User", back_populates="donations", foreign_keys=[donor_id])
     accepted_ngo = relationship("User", foreign_keys=[accepted_ngo_id])
@@ -68,6 +68,6 @@ class DonationStatusHistory(Base):
     donation_id = Column(String(36), ForeignKey("donations.id"), nullable=False)
     status = Column(String(30), nullable=False)
     note = Column(Text, nullable=True)
-    changed_at = Column(DateTime, default=datetime.utcnow)
+    changed_at = Column(DateTime, default=utcnow)
 
     donation = relationship("Donation", back_populates="status_history")

@@ -1,104 +1,55 @@
-# Surplus2Serve — Backend (Phases 1–2)
+# Surplus2Serve - AI-Based Surplus Food Redistribution Platform
 
-AI-based surplus food redistribution platform. Matches the report's stack:
-**React.js (frontend, not built yet) + Python/FastAPI (backend) + MySQL (database) + Scikit-learn (AI/ML, coming in Phase 3)**.
+Stack (as in the project report): **React.js** · **Python + FastAPI** · **MySQL** · **scikit-learn** · **JWT** · **OpenStreetMap (Nominatim geocoding + OSRM routing + Leaflet maps)**.
 
-This delivery covers:
-- **Phase 1:** Project scaffold, MySQL connection, User/Donation/Requirement/Notification models, JWT auth (register/login)
-- **Phase 2:** Donation posting & listing, NGO requirement posting & listing, donation acceptance, and full status tracking (Posted → Accepted → Pickup Pending → Delivered → Completed/Expired) with an audit history table
+## Run it
 
-Everything below has been tested against a real local MySQL instance.
-
-## 1. Install MySQL (if you don't have it)
-
-**Windows:** install MySQL Community Server from dev.mysql.com, or via `choco install mysql`.
-**Mac:** `brew install mysql && brew services start mysql`
-**Linux:** `sudo apt install mysql-server && sudo service mysql start`
-
-## 2. Create the database and a dev user
-
-Open a MySQL shell (`mysql -u root -p`) and run:
-
+### 1. MySQL
 ```sql
 CREATE DATABASE surplus2serve;
-CREATE USER 's2s_user'@'localhost' IDENTIFIED BY 's2s_pass123';
+CREATE USER 's2s_user'@'localhost' IDENTIFIED BY 'your_password';
 GRANT ALL PRIVILEGES ON surplus2serve.* TO 's2s_user'@'localhost';
 FLUSH PRIVILEGES;
 ```
-
-(These exact credentials match the included `backend/.env` file, so no further config is needed — but feel free to change them, just update `.env` to match.)
-
-## 3. Install Python dependencies
-
+### 2. Backend
 ```bash
 cd backend
+copy .env.example .env        # (cp on Mac/Linux) then put your DB password + a random JWT secret in .env
 pip install -r requirements.txt
+python seed_demo.py           # optional demo data (add --reset to wipe & reseed)
+uvicorn app.main:app --reload --port 8000     # Swagger UI: http://localhost:8000/docs
 ```
-
-If you don't already have Python 3.10+, install it first.
-
-## 4. Run the server
-
+Tables are created automatically on startup.
+### 3. Frontend
 ```bash
-cd backend
-uvicorn app.main:app --reload --port 8000
+cd frontend
+npm install
+npm start                     # http://localhost:3000
 ```
+### Demo logins (after `seed_demo.py`, password `demo1234`)
+`admin@s2s.com` · `donor1@s2s.com` · `donor2@s2s.com` · `ngo1@s2s.com` · `ngo2@s2s.com` · `ngo3@s2s.com`
+Admin self-registration needs the code in `ADMIN_SIGNUP_CODE` (default `S2S-ADMIN-2026`).
 
-On startup, FastAPI automatically creates all tables in your `surplus2serve` database (no migration step needed for this prototype). Visit `http://localhost:8000/docs` for the interactive Swagger UI — you can test every endpoint from the browser without writing any frontend code yet.
-
-## Project structure
-
+### Tests
+```bash
+cd backend && pip install -r requirements-dev.txt && python -m pytest tests -v
 ```
-backend/
-├── requirements.txt
-├── .env                        # DB credentials + JWT secret (already filled in for local dev)
-├── .env.example
-└── app/
-    ├── main.py                 # FastAPI app entrypoint, creates tables, mounts routers
-    ├── config.py                # Settings loaded from .env
-    ├── database.py              # SQLAlchemy engine/session (MySQL)
-    ├── models/                  # SQLAlchemy ORM models
-    │   ├── user.py
-    │   ├── donation.py          # Donation + DonationStatusHistory
-    │   ├── requirement.py
-    │   └── notification.py      # (model ready; endpoints come in a later phase)
-    ├── schemas/                 # Pydantic request/response validation
-    │   ├── user.py
-    │   ├── donation.py
-    │   └── requirement.py
-    ├── auth/
-    │   ├── security.py          # bcrypt password hashing + JWT
-    │   └── dependencies.py      # get_current_user, require_role(...)
-    ├── routers/                 # API endpoints
-    │   ├── auth.py               # POST /api/auth/register, /api/auth/login
-    │   ├── donations.py          # POST/GET /api/donations, PATCH .../status
-    │   └── requirements.py       # POST/GET/DELETE /api/requirements
-    ├── services/
-    │   └── status_flow.py        # Valid donation status transitions
-    └── utils/
-        └── geo.py                 # Haversine distance calculation
-```
+(23 automated tests, mapped to report test cases TC01-TC14; they use an in-memory SQLite DB, no MySQL needed.)
 
-## API endpoints so far
-
-| Method | Path | Role required | Purpose |
-|---|---|---|---|
-| POST | `/api/auth/register` | — | Register as donor / ngo / admin |
-| POST | `/api/auth/login` | — | Log in, get a JWT |
-| POST | `/api/donations` | donor | Post a surplus food donation |
-| GET | `/api/donations` | any | List donations (`mine=true`, `status_filter=`, `near_lat`/`near_lng`/`max_distance_km`) |
-| GET | `/api/donations/{id}` | any | Get one donation |
-| PATCH | `/api/donations/{id}/status` | donor/ngo/admin | Move a donation through its status flow |
-| POST | `/api/requirements` | ngo | Post a food requirement |
-| GET | `/api/requirements` | any | List requirements (`mine=true`) |
-| DELETE | `/api/requirements/{id}` | ngo/admin | Delete a requirement |
-
-All endpoints except register/login require `Authorization: Bearer <token>`.
-
-## What's next (not in this delivery yet)
-
-- Phase 3: AI recommendation engine (Scikit-learn)
-- Phase 4: Urgency/expiry engine + circular-economy fallback
-- Phase 5: Location/route suggestion + demand prediction (Scikit-learn)
-- Phase 6: Notifications + impact dashboard + admin dashboard
-- Phase 7: React frontend
+## Requirement coverage
+| FR | Feature | Where |
+|---|---|---|
+| FR01-02 | Register/login (JWT, bcrypt), roles, profile | `routers/auth.py`, `Login.js`, `Profile.js` |
+| FR03,05 | Post/list/edit/delete surplus food | `routers/donations.py`, `PostDonation.js` |
+| FR04 | NGO requirements | `routers/requirements.py`, `Requirements.js` |
+| FR06 | AI recipient recommendation (scikit-learn TF-IDF similarity + weighted multi-factor ranking) | `services/recommender.py` |
+| FR07 | Geocoding + distance | `utils/geo.py`, `routers/location.py` |
+| FR08 | Urgency & expiry rules | `services/urgency.py` |
+| FR09-10 | Accept + Posted→Accepted→Pickup Pending→Delivered→Completed/Expired with audit trail | `services/status_flow.py`, `DonationDetail.js` |
+| FR11 | Route (OSRM) + multi-donor collection trip | `routers/routes.py`, `Pickups.js` |
+| FR12 | Circular economy fallback (compost / animal feed) | `services/urgency.py` |
+| FR13 | Notifications (in-app + optional SMTP e-mail) | `services/notifications.py`, `Notifications.js` |
+| FR14 | Impact dashboard | `services/impact.py`, `Impact.js` |
+| FR15 | Admin dashboard (users, verify, donations, activity) | `routers/admin.py`, `Admin.js` |
+| FR16 | Demand forecast (scikit-learn LinearRegression) | `services/demand.py`, `Demand.js` |
+| FR17 | Donation history | `GET /api/donations/{id}/history` |

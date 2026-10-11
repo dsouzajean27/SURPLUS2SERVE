@@ -1,13 +1,10 @@
-from datetime import datetime
 from typing import Optional, Literal
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+from app.schemas.common import LocationIn, OutDateTime
 
-class LocationIn(BaseModel):
-    address: str
-    lat: float
-    lng: float
+__all__ = ["LocationIn", "UserRegister", "UserLogin", "UserOut", "TokenResponse", "ProfileUpdate"]
 
 
 class UserRegister(BaseModel):
@@ -17,6 +14,7 @@ class UserRegister(BaseModel):
     role: Literal["donor", "ngo", "admin"]
     phone: Optional[str] = None
     location: LocationIn
+    admin_code: Optional[str] = None  # required only when role == "admin"
 
 
 class UserLogin(BaseModel):
@@ -24,7 +22,15 @@ class UserLogin(BaseModel):
     password: str
 
 
+class ProfileUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=1, max_length=150)
+    phone: Optional[str] = None
+    location: Optional[LocationIn] = None
+
+
 class UserOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     name: str
     email: str
@@ -34,10 +40,7 @@ class UserOut(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     verified: bool
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
+    created_at: OutDateTime
 
 
 class TokenResponse(BaseModel):

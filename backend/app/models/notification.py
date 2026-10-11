@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from app.utils.timeutil import utcnow
 
 from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Text
 
@@ -22,4 +22,4 @@ class Notification(Base):
     type = Column(String(50), default="info")  # e.g. new_match, accepted, status_change, expiry_warning
     related_donation_id = Column(String(36), nullable=True)
     read = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)

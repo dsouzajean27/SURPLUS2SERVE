@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import bcrypt
@@ -8,21 +8,20 @@ from app.config import settings
 
 
 def hash_password(password: str) -> str:
-    # bcrypt has a hard 72-byte input limit - truncate defensively rather
-    # than letting it raise on an unusually long password.
-    password_bytes = password.encode("utf-8")[:72]
-    return bcrypt.hashpw(password_bytes, bcrypt.gensalt()).decode("utf-8")
+    # bcrypt has a hard 72-byte input limit - truncate defensively.
+    return bcrypt.hashpw(password.encode("utf-8")[:72], bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(plain_password: str, password_hash: str) -> bool:
-    password_bytes = plain_password.encode("utf-8")[:72]
-    return bcrypt.checkpw(password_bytes, password_hash.encode("utf-8"))
+    try:
+        return bcrypt.checkpw(plain_password.encode("utf-8")[:72], password_hash.encode("utf-8"))
+    except ValueError:
+        return False
 
 
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=settings.JWT_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
+    to_encode["exp"] = datetime.now(timezone.utc) + timedelta(minutes=settings.JWT_EXPIRE_MINUTES)
     return jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
