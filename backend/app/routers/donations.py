@@ -10,7 +10,7 @@ from app.models.donation import Donation, DonationStatusHistory
 from app.schemas.donation import DonationCreate, DonationOut, StatusUpdate
 from app.auth.dependencies import get_current_user, require_role
 from app.services.status_flow import is_valid_transition
-from app.utils.geo import haversine_km
+from app.utils.geo import haversine_distance
 
 router = APIRouter(prefix="/api/donations", tags=["donations"])
 

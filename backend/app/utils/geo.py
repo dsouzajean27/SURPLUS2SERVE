@@ -1,7 +1,7 @@
 import math
 
 
-def haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+def haversine_distance(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
     """Great-circle distance in km between two lat/lng points."""
     R = 6371.0
     phi1, phi2 = math.radians(lat1), math.radians(lat2)
