@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import Base, engine
 from app import models  # noqa: F401 - imported so all models register with Base before create_all
-from app.routers import auth, donations, requirements, recommendations
+from app.routers import auth, donations, requirements, recommendations, dashboard, demand, notifications, routes
 
 app = FastAPI(title="Surplus2Serve API", version="0.1.0")
 
@@ -27,6 +27,9 @@ app.include_router(auth.router)
 app.include_router(donations.router)
 app.include_router(requirements.router)
 app.include_router(recommendations.router)
+app.include_router(dashboard.router)
+app.include_router(demand.router)
+app.include_router(routes.router)
 
 
 @app.get("/api/health")
