@@ -1,0 +1,43 @@
+// API datetimes are UTC. Treat strings without a timezone as UTC, show in local time.
+export function parseDate(s) {
+  if (!s) return null;
+  if (s instanceof Date) return s;
+  return new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(s) ? s : s + "Z");
+}
+
+export function fmtDateTime(s) {
+  const d = parseDate(s);
+  return d ? d.toLocaleString([], { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "-";
+}
+
+// <input type="datetime-local"> value for a Date (local time)
+export function toLocalInput(d) {
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+// datetime-local value -> ISO string in UTC for the API
+export function localInputToIso(v) {
+  return v ? new Date(v).toISOString() : null;
+}
+
+export function hoursText(h) {
+  if (h <= 0) return "expired window";
+  if (h < 1) return `${Math.round(h * 60)} min left`;
+  if (h < 48) return `${h.toFixed(1)} h left`;
+  return `${Math.round(h / 24)} days left`;
+}
+
+export const STATUS_LABEL = {
+  posted: "Posted",
+  accepted: "Accepted",
+  pickup_pending: "Pickup pending",
+  delivered: "Delivered",
+  completed: "Completed",
+  expired: "Expired",
+};
+
+export const FALLBACK_LABEL = { compost: "Composting", animal_feed: "Animal feed", none: "-" };
+
+export const homePathFor = (role) =>
+  role === "donor" ? "/donor" : role === "ngo" ? "/ngo" : role === "admin" ? "/admin" : "/login";
