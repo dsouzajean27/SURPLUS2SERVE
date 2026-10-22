@@ -1,3 +1,5 @@
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -38,7 +40,8 @@ def recommend_for_donation(donation_id: str, db: Session = Depends(get_db),
 
 
 @router.get("/for-ngo")
-def recommend_for_ngo(db: Session = Depends(get_db), current_user: User = Depends(require_role("ngo"))):
+def recommend_for_ngo(radius_km: Optional[float] = None, db: Session = Depends(get_db),
+                      current_user: User = Depends(require_role("ngo"))):
     """Open donations ranked by how well they fit *this* NGO's current requirements."""
     reqs = db.query(Requirement).filter(Requirement.ngo_id == current_user.id).all()
     open_donations = db.query(Donation).filter(Donation.status == "posted").all()
@@ -46,10 +49,12 @@ def recommend_for_ngo(db: Session = Depends(get_db), current_user: User = Depend
         expire_if_needed(d, db)
     open_donations = [d for d in open_donations if d.status == "posted"]
     ranked = rank_donations_for_ngo(open_donations, reqs)
-    origin = (current_user.latitude, current_user.longitude)
+    origin = (current_user.latitude, current_user.longitude) if current_user.latitude is not None else None
     out = []
     for r in ranked:
         item = serialize_donation(r["donation"], origin)
+        if radius_km is not None and origin and item["distance_km"] > radius_km:
+            continue  # outside the NGO's chosen radius
         item.update({"match_score": r["score"], "match_breakdown": r["breakdown"],
                      "match_explanation": r["explanation"]})
         out.append(item)

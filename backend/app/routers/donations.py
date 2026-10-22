@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -81,14 +81,22 @@ def create_donation(payload: DonationCreate, db: Session = Depends(get_db),
 def list_donations(
     mine: bool = False,
     status_filter: Optional[str] = None,
-    near_lat: Optional[float] = None,
-    near_lng: Optional[float] = None,
-    max_distance_km: Optional[float] = None,
+    near_lat: Optional[float] = Query(default=None, ge=-90, le=90),
+    near_lng: Optional[float] = Query(default=None, ge=-180, le=180),
+    max_distance_km: Optional[float] = Query(default=None, gt=0, le=500),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Donors see their own donations, NGOs see open donations + the ones they accepted,
     admins see everything."""
+    if (near_lat is None) != (near_lng is None):
+        raise HTTPException(status_code=422, detail="near_lat and near_lng must be provided together")
+    if max_distance_km is not None and near_lat is None and current_user.role != "ngo":
+        raise HTTPException(
+            status_code=422,
+            detail="A location is required for radius filtering; provide near_lat and near_lng",
+        )
+
     _expire_overdue(db)
     q = db.query(Donation)
     if current_user.role == "donor":
@@ -111,8 +119,13 @@ def list_donations(
         origin = (current_user.latitude, current_user.longitude)
 
     rows = [serialize_donation(d, origin) for d in donations]
-    if max_distance_km is not None and origin:
-        rows = [r for r in rows if r["distance_km"] <= max_distance_km]
+    if max_distance_km is not None:
+        if origin is None:
+            raise HTTPException(
+                status_code=422,
+                detail="Set your NGO profile location or provide near_lat and near_lng to use radius filtering",
+            )
+        rows = [r for r in rows if r["distance_km"] is not None and r["distance_km"] <= max_distance_km]
     if near_lat is not None and near_lng is not None:
         rows.sort(key=lambda r: r["distance_km"])
     return rows

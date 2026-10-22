@@ -118,6 +118,9 @@ export default function DonationDetail() {
       <div className="grid two">
         <div>
           <div className="card">
+            {d.image_url && <img src={d.image_url} alt={d.food_type}
+              style={{ width: "100%", maxHeight: 320, objectFit: "cover", borderRadius: 10, marginBottom: 14 }}
+              onError={(e) => { e.currentTarget.style.display = "none"; }} />}
             <div className="row between wrap">
               <h2>{d.food_type}</h2>
               <StatusBadge status={d.status} />

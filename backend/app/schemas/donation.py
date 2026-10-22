@@ -1,6 +1,7 @@
 from typing import Optional, Literal
+from urllib.parse import urlparse
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator, field_validator
 
 from app.schemas.common import LocationIn, InDateTime, OutDateTime
 
@@ -15,7 +16,19 @@ class DonationCreate(BaseModel):
     expiry_time: InDateTime
     storage_condition: Literal["room_temp", "refrigerated", "frozen"] = "room_temp"
     location: LocationIn
-    image_url: Optional[str] = None
+    image_url: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("image_url")
+    @classmethod
+    def validate_image_url(cls, value):
+        """Only accept ordinary HTTP(S) image URLs; do not allow javascript:/data: URLs."""
+        if value is None or not value.strip():
+            return None
+        value = value.strip()
+        parsed = urlparse(value)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise ValueError("image_url must be a valid http:// or https:// URL")
+        return value
 
     @model_validator(mode="after")
     def _times(self):

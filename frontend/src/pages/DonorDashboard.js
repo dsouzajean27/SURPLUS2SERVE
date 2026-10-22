@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import client, { errMsg } from "../api/client";
 import StatCard from "../components/StatCard";
 import { StatusBadge, UrgencyBadge } from "../components/Badges";
-import { fmtDateTime } from "../utils";
+import { fmtDateTime, imgUrl } from "../utils";
 
 export default function DonorDashboard() {
   const [donations, setDonations] = useState(null);
@@ -58,7 +58,7 @@ export default function DonorDashboard() {
               <tbody>
                 {rows.map((d) => (
                   <tr key={d.id}>
-                    <td><strong>{d.food_type}</strong><div className="muted small-text">{d.address}</div></td>
+                    <td>{d.image_url && <img className="food-thumb" src={imgUrl(d.image_url)} alt="" />}<strong>{d.food_type}</strong><div className="muted small-text">{d.address}</div></td>
                     <td>{d.quantity_kg} kg<div className="muted small-text">{d.servings} servings</div></td>
                     <td>{fmtDateTime(d.expiry_time)}</td>
                     <td>{["posted", "accepted", "pickup_pending"].includes(d.status) ? <UrgencyBadge level={d.urgency} hours={d.hours_left} /> : "-"}</td>

@@ -2,12 +2,13 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.database import Base, engine
 from app import models  # noqa: F401 - registers all models with Base before create_all
 from app.routers import (auth, donations, requirements, recommendations, dashboard,
-                         demand, notifications, routes, admin, location)
+                         demand, notifications, routes, admin, location, uploads)
 
 
 @asynccontextmanager
@@ -29,8 +30,11 @@ app.add_middleware(
 )
 
 for r in (auth, donations, requirements, recommendations, dashboard, demand,
-          notifications, routes, admin, location):
+          notifications, routes, admin, location, uploads):
     app.include_router(r.router)
+
+# Uploaded food photos are served publicly from /uploads/<file>
+app.mount("/uploads", StaticFiles(directory=uploads.UPLOAD_DIR), name="uploads")
 
 
 @app.get("/api/health")

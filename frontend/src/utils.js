@@ -41,3 +41,11 @@ export const FALLBACK_LABEL = { compost: "Composting", animal_feed: "Animal feed
 
 export const homePathFor = (role) =>
   role === "donor" ? "/donor" : role === "ngo" ? "/ngo" : role === "admin" ? "/admin" : "/login";
+
+// Uploaded images come back as "/uploads/x.jpg" - prefix with the backend origin.
+export function imgUrl(path) {
+  if (!path) return null;
+  if (/^https?:\/\//.test(path)) return path;
+  const api = process.env.REACT_APP_API_URL || "http://localhost:8000/api";
+  return api.replace(/\/api\/?$/, "") + path;
+}

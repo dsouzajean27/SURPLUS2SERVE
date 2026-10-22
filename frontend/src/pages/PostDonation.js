@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import client, { errMsg } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import LocationInput from "../components/LocationInput";
-import { localInputToIso, toLocalInput } from "../utils";
+import { imgUrl, localInputToIso, toLocalInput } from "../utils";
 
 export default function PostDonation() {
   const { user } = useAuth();
@@ -19,7 +19,18 @@ export default function PostDonation() {
   });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [photo, setPhoto] = useState(null);
+  const [preview, setPreview] = useState(null);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+
+  function pickPhoto(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { setError("Photo is too large (max 5 MB)"); return; }
+    setError("");
+    setPhoto(file);
+    setPreview(URL.createObjectURL(file));
+  }
 
   async function submit(e) {
     e.preventDefault();
@@ -28,7 +39,15 @@ export default function PostDonation() {
     if (f.prep_time && new Date(f.prep_time) >= new Date(f.expiry_time)) return setError("Expiry must be after preparation time");
     setBusy(true);
     try {
+      let image_url = null;
+      if (photo) {
+        const fd = new FormData();
+        fd.append("file", photo);
+        const up = await client.post("/uploads/food-image", fd);
+        image_url = imgUrl(up.data.image_url);
+      }
       const res = await client.post("/donations", {
+        image_url,
         food_type: f.food_type,
         quantity_kg: Number(f.quantity_kg),
         servings: Number(f.servings),
@@ -69,6 +88,9 @@ export default function PostDonation() {
         <div className="field grow"><label>Expiry / best before</label>
           <input type="datetime-local" value={f.expiry_time} onChange={set("expiry_time")} required /></div>
       </div>
+      <div className="field"><label>Food photo (optional, JPG/PNG/WEBP, max 5 MB)</label>
+        <input type="file" accept="image/jpeg,image/png,image/webp" onChange={pickPhoto} />
+        {preview && <img className="img-preview" src={preview} alt="Preview" />}</div>
       <LocationInput label="Pickup location" value={loc} onChange={setLoc} />
       <button className="btn primary block" disabled={busy}>{busy ? "Posting..." : "Post donation"}</button>
     </form>
