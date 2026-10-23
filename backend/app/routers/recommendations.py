@@ -8,7 +8,7 @@ from app.database import get_db
 from app.models.donation import Donation
 from app.models.requirement import Requirement
 from app.models.user import User
-from app.services.donations import expire_if_needed, serialize_donation
+from app.services.donations import expire_if_needed, serialize_donation, ngo_reliability_map
 from app.services.recommender import rank_recipients, rank_donations_for_ngo
 from app.services.urgency import fallback_use, FALLBACK_TEXT
 
@@ -27,7 +27,7 @@ def recommend_for_donation(donation_id: str, db: Session = Depends(get_db),
         raise HTTPException(status_code=403, detail="Not your donation")
     expire_if_needed(d, db)
 
-    ranked = rank_recipients(d, db.query(Requirement).all(), top_k=5)
+    ranked = rank_recipients(d, db.query(Requirement).all(), top_k=5, reliability=ngo_reliability_map(db))
     fallback = None
     if not ranked and d.status in ("posted", "expired"):
         kind = d.fallback_recommendation if d.fallback_recommendation != "none" else fallback_use(d.food_type)
@@ -48,7 +48,7 @@ def recommend_for_ngo(radius_km: Optional[float] = None, db: Session = Depends(g
     for d in open_donations:
         expire_if_needed(d, db)
     open_donations = [d for d in open_donations if d.status == "posted"]
-    ranked = rank_donations_for_ngo(open_donations, reqs)
+    ranked = rank_donations_for_ngo(open_donations, reqs, reliability=ngo_reliability_map(db))
     origin = (current_user.latitude, current_user.longitude) if current_user.latitude is not None else None
     out = []
     for r in ranked:

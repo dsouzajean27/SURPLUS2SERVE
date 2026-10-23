@@ -1,7 +1,7 @@
 import uuid
 from app.utils.timeutil import utcnow
 
-from sqlalchemy import Column, String, Float, DateTime, Enum, ForeignKey, Text
+from sqlalchemy import Column, String, Float, DateTime, Enum, ForeignKey, Text, JSON
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -33,6 +33,16 @@ class Donation(Base):
     longitude = Column(Float, nullable=False)
 
     image_url = Column(String(500), nullable=True)
+
+    # ---- Phase 5: food quality verification --------------------------------
+    allergens = Column(String(255), nullable=True)           # free text, e.g. "nuts, dairy"
+    packaging = Column(String(20), nullable=True)            # sealed | covered | open
+    hygiene_checklist = Column(JSON, nullable=True)          # donor's safety declaration
+    # Recipient's inspection at pickup
+    inspection_result = Column(String(10), nullable=True)    # passed | failed
+    inspection_notes = Column(Text, nullable=True)
+    inspection_temp_c = Column(Float, nullable=True)
+    inspected_at = Column(DateTime, nullable=True)
 
     status = Column(
         Enum(

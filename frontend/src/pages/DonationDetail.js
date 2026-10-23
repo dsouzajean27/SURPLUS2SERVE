@@ -2,14 +2,15 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import client, { errMsg } from "../api/client";
 import { useAuth } from "../context/AuthContext";
-import { StatusBadge, UrgencyBadge } from "../components/Badges";
+import { QualityBadge, StatusBadge, UrgencyBadge } from "../components/Badges";
 import Timeline from "../components/Timeline";
 import MapView from "../components/MapView";
-import { FALLBACK_LABEL, fmtDateTime } from "../utils";
+import DonationChat from "../components/DonationChat";
+import { CHECKLIST, FALLBACK_LABEL, fmtDateTime, imgUrl } from "../utils";
 
 const FACTORS = [
   ["food", "Food match"], ["quantity", "Quantity"], ["distance", "Distance"],
-  ["urgency_pickup", "Urgency / pickup"], ["demand", "Demand"],
+  ["urgency_pickup", "Urgency / pickup"], ["demand", "Demand"], ["reliability", "Reliability"],
 ];
 
 function Recommendations({ rec }) {
@@ -26,7 +27,7 @@ function Recommendations({ rec }) {
   return (
     <div className="card">
       <h3>🤖 AI-recommended recipients</h3>
-      <p className="muted small-text">Ranked by food match, quantity fit, distance, urgency/pickup availability and demand. The AI ranks recipients - it does not judge food safety.</p>
+      <p className="muted small-text">Ranked by food match, quantity fit, distance, urgency/pickup availability, demand and the NGO's pickup track record. NGOs that cannot reach the food before it spoils are excluded. The AI ranks recipients - it does not judge food safety.</p>
       {rec.recipients.map((r) => (
         <div key={r.requirement_id} className={`rec ${r.rank === 1 ? "best" : ""}`}>
           <div className="row between">
@@ -46,6 +47,54 @@ function Recommendations({ rec }) {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+function FoodSafety({ d, canInspect, onInspect, busy }) {
+  const [result, setResult] = useState("passed");
+  const [temp, setTemp] = useState("");
+  const [notes, setNotes] = useState("");
+  const q = d.quality;
+  if (!q) return null;
+  const insp = d.inspection;
+  return (
+    <div className="card">
+      <h3>🧪 Food safety</h3>
+      <p><QualityBadge quality={q} /></p>
+      {[...q.blockers, ...q.notes].map((n, i) => <div className="small-text muted" key={i}>• {n}</div>)}
+      {d.allergens && <p className="small-text"><strong>⚠️ Allergens:</strong> {d.allergens}</p>}
+      {d.packaging && <p className="small-text"><strong>Packaging:</strong> {d.packaging}</p>}
+      {d.hygiene_checklist && (
+        <ul className="checklist">
+          {CHECKLIST.map(([k, label]) => <li key={k} className={d.hygiene_checklist[k] ? "yes" : "no"}>{d.hygiene_checklist[k] ? "✔" : "✘"} {label}</li>)}
+        </ul>
+      )}
+      {insp && (
+        <div className={`alert ${insp.result === "passed" ? "ok" : "error"}`}>
+          <strong>Recipient quality check: {insp.result === "passed" ? "PASSED" : "FAILED"}</strong>
+          {insp.temperature_c != null && <> · {insp.temperature_c} °C</>}
+          {insp.notes && <div>{insp.notes}</div>}
+          <div className="small-text">{fmtDateTime(insp.inspected_at)}</div>
+        </div>
+      )}
+      {canInspect && (
+        <form className="inspect-form" onSubmit={(e) => { e.preventDefault(); onInspect({ result, notes: notes.trim() || null, temperature_c: temp === "" ? null : Number(temp) }); }}>
+          <h4>Inspect the food at pickup</h4>
+          <p className="muted small-text">Look, smell and (for chilled/frozen food) measure the temperature before you take it. Failing the check stops the delivery and alerts the donor.</p>
+          <div className="row gap wrap">
+            <select value={result} onChange={(e) => setResult(e.target.value)}>
+              <option value="passed">✅ Looks and smells fine</option>
+              <option value="failed">❌ Not safe</option>
+            </select>
+            {d.storage_condition !== "room_temp" && (
+              <input type="number" step="0.1" placeholder="Temperature °C" value={temp} onChange={(e) => setTemp(e.target.value)} />
+            )}
+          </div>
+          <input placeholder={result === "failed" ? "What is wrong? (required)" : "Notes (optional)"} value={notes} onChange={(e) => setNotes(e.target.value)} required={result === "failed"} />
+          <button className="btn primary" disabled={busy}>{insp ? "Update quality check" : "Record quality check"}</button>
+        </form>
+      )}
     </div>
   );
 }
@@ -118,13 +167,11 @@ export default function DonationDetail() {
       <div className="grid two">
         <div>
           <div className="card">
-            {d.image_url && <img src={d.image_url} alt={d.food_type}
-              style={{ width: "100%", maxHeight: 320, objectFit: "cover", borderRadius: 10, marginBottom: 14 }}
-              onError={(e) => { e.currentTarget.style.display = "none"; }} />}
             <div className="row between wrap">
               <h2>{d.food_type}</h2>
               <StatusBadge status={d.status} />
             </div>
+            {d.image_url && <img className="food-img large" src={imgUrl(d.image_url)} alt={d.food_type} />}
             <table className="kv"><tbody>
               <tr><td>Quantity</td><td>{d.quantity_kg} kg · {d.servings} servings</td></tr>
               <tr><td>Donor</td><td>{d.donor_name}</td></tr>
@@ -139,7 +186,11 @@ export default function DonationDetail() {
             </tbody></table>
             {actions.length > 0 && <div className="row gap wrap actions">{actions}</div>}
           </div>
+          <FoodSafety d={d} busy={busy}
+            canInspect={(isRecipient || isAdmin) && ["accepted", "pickup_pending"].includes(d.status)}
+            onInspect={(body) => act(() => client.post(`/donations/${id}/inspection`, body))} />
           <Recommendations rec={rec} />
+          {d.accepted_ngo_id && <DonationChat donationId={d.id} canSend={isOwner || isRecipient} />}
           <div className="card"><h3>Tracking</h3><Timeline history={history} /></div>
         </div>
         <div>

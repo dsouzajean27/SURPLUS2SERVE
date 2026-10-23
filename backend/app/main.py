@@ -6,9 +6,10 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.database import Base, engine
+from app.migrations import ensure_columns
 from app import models  # noqa: F401 - registers all models with Base before create_all
 from app.routers import (auth, donations, requirements, recommendations, dashboard,
-                         demand, notifications, routes, admin, location, uploads)
+                         demand, notifications, routes, admin, location, uploads, messages)
 
 
 @asynccontextmanager
@@ -16,6 +17,7 @@ async def lifespan(app: FastAPI):
     # Creates tables that don't exist yet; never alters existing ones.
     # Fine for a college prototype - use Alembic migrations for production.
     Base.metadata.create_all(bind=engine)
+    ensure_columns(engine, Base)   # adds any new columns to tables that already exist
     yield
 
 
@@ -30,7 +32,7 @@ app.add_middleware(
 )
 
 for r in (auth, donations, requirements, recommendations, dashboard, demand,
-          notifications, routes, admin, location, uploads):
+          notifications, routes, admin, location, uploads, messages):
     app.include_router(r.router)
 
 # Uploaded food photos are served publicly from /uploads/<file>

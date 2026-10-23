@@ -49,3 +49,13 @@ export function imgUrl(path) {
   const api = process.env.REACT_APP_API_URL || "http://localhost:8000/api";
   return api.replace(/\/api\/?$/, "") + path;
 }
+
+// Phase 5 - food quality verification (keys match backend services/quality.py)
+export const CHECKLIST = [
+  ["hygienic_prep", "Prepared in a clean kitchen by people with clean hands"],
+  ["not_plate_leftovers", "NOT leftovers from anyone's plate / a buffet that was already served"],
+  ["stored_properly", "Kept at the storage condition chosen above the whole time"],
+  ["clean_container", "Packed in a clean, food-grade container"],
+  ["no_spoilage_signs", "No bad smell, mould, slime or discolouration"],
+];
+export const QUALITY_LABEL = { good: "Good quality", caution: "Check carefully", rejected: "Unsafe" };

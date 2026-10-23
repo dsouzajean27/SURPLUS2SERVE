@@ -7,6 +7,7 @@ from app.models.donation import Donation, DonationStatusHistory
 from app.models.notification import Notification
 from app.models.requirement import Requirement
 from app.services.notifications import create_notification, notify_status_change
+from app.services.quality import assess_donation
 from app.services.recommender import rank_recipients
 from app.services.status_flow import EXPIRABLE
 from app.services.urgency import classify_urgency, fallback_use, FALLBACK_TEXT, HIGH_HOURS
@@ -24,6 +25,11 @@ def serialize_donation(d: Donation, origin: Optional[tuple] = None) -> dict:
         "storage_condition": d.storage_condition or "room_temp",
         "address": d.address, "latitude": d.latitude, "longitude": d.longitude,
         "image_url": d.image_url, "status": d.status,
+        "allergens": d.allergens, "packaging": d.packaging, "hygiene_checklist": d.hygiene_checklist,
+        "quality": assess_donation(d),
+        "inspection": ({"result": d.inspection_result, "notes": d.inspection_notes,
+                        "temperature_c": d.inspection_temp_c, "inspected_at": d.inspected_at}
+                       if d.inspection_result else None),
         "fallback_recommendation": d.fallback_recommendation or "none",
         "accepted_ngo_id": d.accepted_ngo_id,
         "accepted_ngo_name": d.accepted_ngo.name if d.accepted_ngo else None,
@@ -31,6 +37,21 @@ def serialize_donation(d: Donation, origin: Optional[tuple] = None) -> dict:
         "urgency": u["level"], "hours_left": u["hours_left"], "urgency_reason": u["reason"],
         "distance_km": haversine_distance(origin[0], origin[1], d.latitude, d.longitude) if origin else None,
     }
+
+
+def ngo_reliability_map(db: Session) -> dict:
+    """Learns each NGO's reliability from history: delivered/completed pickups count for it,
+    donations it accepted but that then expired count against it (Laplace-smoothed, 0..1).
+    NGOs with no history are simply absent (the recommender treats them as neutral)."""
+    done, failed = {}, {}
+    rows = db.query(Donation.accepted_ngo_id, Donation.status).filter(Donation.accepted_ngo_id.isnot(None)).all()
+    for ngo_id, st in rows:
+        if st in ("delivered", "completed"):
+            done[ngo_id] = done.get(ngo_id, 0) + 1
+        elif st == "expired":
+            failed[ngo_id] = failed.get(ngo_id, 0) + 1
+    return {n: (done.get(n, 0) + 1) / (done.get(n, 0) + failed.get(n, 0) + 2)
+            for n in set(done) | set(failed)}
 
 
 def add_history(db: Session, donation_id: str, status: str, note: Optional[str] = None) -> None:
@@ -58,7 +79,7 @@ def notify_matching_ngos(db: Session, donation: Donation) -> list:
     """After a donation is posted: rank recipients, notify the top matches, and if
     nobody is suitable store the circular-economy fallback (FR12)."""
     reqs = db.query(Requirement).all()
-    ranked = rank_recipients(donation, reqs, top_k=5)
+    ranked = rank_recipients(donation, reqs, top_k=5, reliability=ngo_reliability_map(db))
     if not ranked:
         donation.fallback_recommendation = fallback_use(donation.food_type)
         create_notification(db, donation.donor_id, FALLBACK_TEXT[donation.fallback_recommendation],

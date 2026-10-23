@@ -973,3 +973,25 @@ table.kv tr:hover {
 .food-img.large  { height: 260px; }
 .food-thumb      { width: 48px; height: 48px; object-fit: cover; border-radius: 6px; vertical-align: middle; margin-right: 10px; }
 .img-preview     { max-width: 240px; max-height: 180px; border-radius: 8px; margin-top: 8px; display: block; }
+
+/* Donor <-> NGO chat */
+.chat-box        { max-height: 260px; overflow-y: auto; border: 1px solid #e2e8e2; border-radius: 8px; padding: 10px; margin: 10px 0; background: #fafcfa; }
+.chat-msg        { background: #fff; border: 1px solid #e2e8e2; border-radius: 8px; padding: 6px 10px; margin-bottom: 8px; max-width: 85%; }
+.chat-msg.mine   { margin-left: auto; background: #e8f5e9; border-color: #c8e6c9; }
+.chat-meta       { font-size: 11px; color: #6b7280; margin-bottom: 2px; }
+
+
+/* ---- Phase 5: food quality verification ---- */
+.q-good     { background: var(--green-light); color: var(--green-dark); }
+.q-caution  { background: #fef3c7; color: #92400e; }
+.q-rejected { background: #fee2e2; color: #991b1b; }
+.safety-box { border: 1px solid var(--border); border-radius: var(--radius-small); padding: 12px 14px; margin: 14px 0; }
+.safety-box legend { font-weight: 600; padding: 0 6px; }
+.safety-box .check { display: flex; gap: 8px; align-items: flex-start; margin: 6px 0; font-size: 0.92rem; }
+.safety-box .check input { width: auto; margin-top: 3px; }
+.quality-preview { margin-top: 10px; padding: 8px 10px; border-radius: var(--radius-small); }
+.quality-preview .badge { margin-bottom: 4px; }
+.checklist { list-style: none; padding: 0; margin: 8px 0; font-size: 0.9rem; }
+.checklist li.yes { color: var(--green-dark); }
+.checklist li.no  { color: #991b1b; }
+.inspect-form { display: grid; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }

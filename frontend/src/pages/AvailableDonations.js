@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import client, { errMsg } from "../api/client";
-import { UrgencyBadge } from "../components/Badges";
+import { QualityBadge, UrgencyBadge } from "../components/Badges";
 import { useAuth } from "../context/AuthContext";
 import { fmtDateTime, imgUrl } from "../utils";
 
@@ -64,7 +64,7 @@ export default function AvailableDonations() {
               <p className="muted small-text">{d.donor_name} · {d.address}</p>
               <p><strong>{d.quantity_kg} kg</strong> · {d.servings} servings · {d.distance_km ?? "?"} km away</p>
               <p className="small-text">Expires {fmtDateTime(d.expiry_time)}</p>
-              <UrgencyBadge level={d.urgency} hours={d.hours_left} />
+              <UrgencyBadge level={d.urgency} hours={d.hours_left} /> <QualityBadge quality={d.quality} />
               <div style={{ marginTop: 10 }}><Link className="btn primary small" to={`/donations/${d.id}`}>View &amp; accept</Link></div>
             </div>
           ))}
